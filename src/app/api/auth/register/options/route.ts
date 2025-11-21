@@ -5,28 +5,29 @@ import { cookies } from 'next/headers';
 import { AuthenticatorTransport } from '@simplewebauthn/server';
 
 export async function POST(request: Request) {
-    const body = await request.json();
-    const { email } = body;
+    try {
+        const body = await request.json();
+        const { email } = body;
 
-    if (!email) {
-        return NextResponse.json({ error: 'Email is required' }, { status: 400 });
-    }
+        if (!email) {
+            return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+        }
 
-    // 1. Get or create user
-    let user = await prisma.user.findUnique({
-        where: { email },
-        include: { authenticators: true },
-    });
-
-    if (!user) {
-        user = await prisma.user.create({
-            data: { email },
+        // 1. Get or create user
+        let user = await prisma.user.findUnique({
+            where: { email },
             include: { authenticators: true },
         });
-    }
 
-    // 2. Generate registration options
-    const options = await generateRegistrationOptions({
+        if (!user) {
+            user = await prisma.user.create({
+                data: { email },
+                include: { authenticators: true },
+            });
+        }
+
+        // 2. Generate registration options
+        const options = await generateRegistrationOptions({
         rpName: 'Next.js WebAuthn',
         rpID: 'login-one-gilt.vercel.app',
         userID: user.id,
@@ -59,5 +60,12 @@ export async function POST(request: Request) {
         maxAge: 60 * 5, // 5 minutes
     });
 
-    return NextResponse.json(options);
+        return NextResponse.json(options);
+    } catch (error: any) {
+        console.error('Registration options error:', error);
+        return NextResponse.json(
+            { error: error.message || 'Failed to generate registration options' },
+            { status: 500 }
+        );
+    }
 }

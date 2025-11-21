@@ -1,17 +1,14 @@
 'use client';
 
 import { useWebAuthn } from '@/hooks/useWebAuthn';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export default function Home() {
     const { register, login, loading, error, success } = useWebAuthn();
     const [email, setEmail] = useState('');
 
-    // Activate Conditional UI on mount
-    useEffect(() => {
-        // Start authentication with no email to trigger autofill
-        login();
-    }, []);
+    // Activate Conditional UI on mount (only if user wants to login)
+    // Removed auto-login to prevent errors on page load
 
     return (
         <main className="flex min-h-screen flex-col items-center justify-center p-24 bg-gray-50 dark:bg-gray-900">
@@ -61,6 +58,14 @@ export default function Home() {
                         {loading ? 'Processing...' : 'Register New Passkey'}
                     </button>
 
+                    <button
+                        onClick={() => login(email)}
+                        disabled={loading || !email}
+                        className="w-full px-4 py-2 text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {loading ? 'Processing...' : 'Login with Passkey'}
+                    </button>
+
                     <div className="relative">
                         <div className="absolute inset-0 flex items-center">
                             <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
@@ -73,7 +78,7 @@ export default function Home() {
                     </div>
 
                     <p className="text-sm text-center text-gray-500 dark:text-gray-400">
-                        Click the email field to sign in with an existing Passkey.
+                        Register a new passkey or login with an existing one.
                     </p>
                 </div>
             </div>

@@ -18,6 +18,12 @@ export function useWebAuthn() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email }),
             });
+
+            if (!optionsRes.ok) {
+                const errorText = await optionsRes.text();
+                throw new Error(`Server error: ${optionsRes.status} - ${errorText || 'Unknown error'}`);
+            }
+
             const options = await optionsRes.json();
 
             if (options.error) throw new Error(options.error);
@@ -39,6 +45,12 @@ export function useWebAuthn() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, response: attResp }),
             });
+
+            if (!verifyRes.ok) {
+                const errorText = await verifyRes.text();
+                throw new Error(`Verification error: ${verifyRes.status} - ${errorText || 'Unknown error'}`);
+            }
+
             const verifyJSON = await verifyRes.json();
 
             if (verifyJSON.verified) {
@@ -65,6 +77,12 @@ export function useWebAuthn() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email }),
             });
+
+            if (!optionsRes.ok) {
+                const errorText = await optionsRes.text();
+                throw new Error(`Server error: ${optionsRes.status} - ${errorText || 'Unknown error'}`);
+            }
+
             const options = await optionsRes.json();
 
             if (options.error) throw new Error(options.error);
@@ -78,6 +96,12 @@ export function useWebAuthn() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ response: asseResp }),
             });
+
+            if (!verifyRes.ok) {
+                const errorText = await verifyRes.text();
+                throw new Error(`Verification error: ${verifyRes.status} - ${errorText || 'Unknown error'}`);
+            }
+
             const verifyJSON = await verifyRes.json();
 
             if (verifyJSON.verified) {

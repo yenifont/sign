@@ -4,12 +4,13 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
 export async function POST(request: Request) {
-    const body = await request.json();
-    const { email, response } = body;
+    try {
+        const body = await request.json();
+        const { email, response } = body;
 
-    if (!email || !response) {
-        return NextResponse.json({ error: 'Missing data' }, { status: 400 });
-    }
+        if (!email || !response) {
+            return NextResponse.json({ error: 'Missing data' }, { status: 400 });
+        }
 
     // 1. Retrieve challenge from cookie
     const cookieStore = await cookies();
@@ -66,5 +67,12 @@ export async function POST(request: Request) {
         return NextResponse.json({ verified: true });
     }
 
-    return NextResponse.json({ verified: false }, { status: 400 });
+        return NextResponse.json({ verified: false }, { status: 400 });
+    } catch (error: any) {
+        console.error('Registration verify error:', error);
+        return NextResponse.json(
+            { error: error.message || 'Failed to verify registration' },
+            { status: 500 }
+        );
+    }
 }
