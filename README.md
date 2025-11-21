@@ -32,20 +32,28 @@ npm install
 
 3. Set up environment variables
 
-Create a `.env` file in the root directory:
+Create a `.env` file in the root directory with your PostgreSQL connection string:
 ```env
-DATABASE_URL="file:./prisma/dev.db"
+DATABASE_URL="postgresql://user:password@localhost:5432/database_name"
 ```
 
 Or create `.env.local` (recommended for Next.js):
 ```env
-DATABASE_URL="file:./prisma/dev.db"
+DATABASE_URL="postgresql://user:password@localhost:5432/database_name"
 ```
 
-4. Initialize the database
+**For local development, you can use:**
+- [Neon](https://neon.tech/) - Serverless PostgreSQL
+- [Supabase](https://supabase.com/) - Open source Firebase alternative
+- [Railway](https://railway.app/) - PostgreSQL hosting
+- Local PostgreSQL installation
+
+4. Initialize the database and run migrations
 ```bash
 npm run db:setup
 ```
+
+This will create the initial migration and apply it to your database.
 
 5. Run the development server
 ```bash
@@ -72,13 +80,13 @@ npm run build
    - SQLite won't work on Vercel (file system is read-only)
 
 2. **Recommended Production Databases:**
+   - [Neon](https://neon.tech/) - Serverless PostgreSQL (Recommended)
    - [Vercel Postgres](https://vercel.com/docs/storage/vercel-postgres)
-   - [PlanetScale](https://planetscale.com/)
    - [Supabase](https://supabase.com/)
    - [Railway](https://railway.app/)
 
-3. **Update Prisma Schema for Production:**
-   If using PostgreSQL, update `prisma/schema.prisma`:
+3. **Prisma Schema:**
+   The schema is already configured for PostgreSQL:
    ```prisma
    datasource db {
      provider = "postgresql"
@@ -86,18 +94,24 @@ npm run build
    }
    ```
 
-4. **Deploy:**
+4. **Migrations:**
+   Migrations will run automatically during Vercel build via `prisma migrate deploy`.
+
+5. **Deploy:**
    ```bash
    vercel --prod
    ```
 
 ## Scripts
 
-- `npm run dev` - Start development server
+- `npm run dev` - Start development server (runs migrations automatically)
 - `npm run build` - Build for production (with auto .env setup)
 - `npm run build:simple` - Simple build (requires .env)
-- `npm run db:setup` - Initialize database
-- `npm run db:reset` - Reset database
+- `npm run db:setup` - Initialize database and create initial migration
+- `npm run db:migrate` - Create and apply a new migration (development)
+- `npm run db:migrate:deploy` - Apply pending migrations (production)
+- `npm run db:reset` - Reset database (drops all data)
+- `npm run db:studio` - Open Prisma Studio (database GUI)
 - `npm start` - Start production server
 - `npm run lint` - Run ESLint
 
@@ -109,12 +123,17 @@ npm run build
 
 ### Local Development
 ```env
-DATABASE_URL="file:./prisma/dev.db"
+DATABASE_URL="postgresql://user:password@localhost:5432/database_name"
 ```
 
-### Production (Vercel)
+### Production (Vercel/Neon)
 ```env
-DATABASE_URL="postgresql://user:password@host:port/database"
+DATABASE_URL="postgresql://user:password@host:5432/database?sslmode=require"
+```
+
+**Example Neon connection string:**
+```
+postgresql://username:password@ep-xxx-xxx.region.aws.neon.tech/dbname?sslmode=require
 ```
 
 ## Troubleshooting
