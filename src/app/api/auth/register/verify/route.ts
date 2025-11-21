@@ -56,13 +56,46 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Invalid registration response' }, { status: 400 });
     }
 
-    const { credentialPublicKey, credentialID, counter, credentialDeviceType, credentialBackedUp } = registrationInfo as any;
+    // Log registrationInfo structure for debugging
+    console.log('RegistrationInfo received:', {
+        keys: Object.keys(registrationInfo),
+        hasCredential: !!registrationInfo.credential,
+        credentialKeys: registrationInfo.credential ? Object.keys(registrationInfo.credential) : [],
+    });
 
-        // Validate required fields
-        if (!credentialPublicKey || !credentialID || counter === undefined) {
-            console.error('Missing required registration info:', { credentialPublicKey: !!credentialPublicKey, credentialID: !!credentialID, counter });
-            return NextResponse.json({ error: 'Invalid registration data' }, { status: 400 });
-        }
+    // Extract data from registrationInfo - structure may vary by SimpleWebAuthn version
+    // SimpleWebAuthn v13+ uses registrationInfo.credential structure
+    const credential = (registrationInfo as any).credential;
+    
+    if (!credential) {
+        console.error('No credential found in registrationInfo:', Object.keys(registrationInfo));
+        return NextResponse.json({ error: 'Invalid registration response structure' }, { status: 400 });
+    }
+
+    const credentialPublicKey = credential.publicKey;
+    const credentialID = credential.id; // This is a base64 string
+    const counter = credential.counter ?? 0;
+    const credentialDeviceType = credential.deviceType || 'unknown';
+    const credentialBackedUp = credential.backedUp ?? false;
+
+    // Validate required fields
+    if (!credentialPublicKey || !credentialID || counter === undefined) {
+        console.error('Missing required registration info:', {
+            credentialPublicKey: !!credentialPublicKey,
+            credentialID: !!credentialID,
+            counter,
+            registrationInfoKeys: Object.keys(registrationInfo),
+            fullRegistrationInfo: JSON.stringify(registrationInfo, null, 2),
+        });
+        return NextResponse.json({ 
+            error: 'Invalid registration data',
+            details: {
+                hasCredentialPublicKey: !!credentialPublicKey,
+                hasCredentialID: !!credentialID,
+                hasCounter: counter !== undefined,
+            }
+        }, { status: 400 });
+    }
 
         // 4. Save authenticator to DB
         try {
