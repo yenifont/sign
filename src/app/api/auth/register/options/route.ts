@@ -27,10 +27,13 @@ export async function POST(request: Request) {
         }
 
         // 2. Generate registration options
+        // Convert user.id (string) to Buffer for userID (required by SimpleWebAuthn v13+)
+        const userIDBuffer = Buffer.from(user.id, 'utf-8');
+        
         const options = await generateRegistrationOptions({
         rpName: 'Next.js WebAuthn',
         rpID: 'login-one-gilt.vercel.app',
-        userID: user.id,
+        userID: userIDBuffer,
         userName: user.email,
         // Don't prompt users for additional information about the authenticator
         // (Recommended for smoother UX)

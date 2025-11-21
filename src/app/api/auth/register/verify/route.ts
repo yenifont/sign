@@ -30,6 +30,9 @@ export async function POST(request: Request) {
     }
 
     // 3. Verify registration
+    // Convert user.id to Buffer to match the userID used in registration
+    const expectedUserID = Buffer.from(user.id, 'utf-8');
+    
     let verification;
     try {
         verification = await verifyRegistrationResponse({
@@ -37,6 +40,7 @@ export async function POST(request: Request) {
             expectedChallenge: challenge,
             expectedOrigin: 'https://login-one-gilt.vercel.app',
             expectedRPID: 'login-one-gilt.vercel.app',
+            expectedUserID: expectedUserID,
         });
     } catch (error) {
         console.error(error);
