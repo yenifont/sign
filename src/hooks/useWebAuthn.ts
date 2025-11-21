@@ -21,7 +21,7 @@ export function useWebAuthn() {
 
             if (!optionsRes.ok) {
                 const errorText = await optionsRes.text();
-                throw new Error(`Server error: ${optionsRes.status} - ${errorText || 'Unknown error'}`);
+                throw new Error(errorText || 'Failed to get registration options');
             }
 
             const options = await optionsRes.json();
@@ -34,7 +34,10 @@ export function useWebAuthn() {
                 attResp = await startRegistration(options);
             } catch (err: any) {
                 if (err.name === 'InvalidStateError') {
-                    throw new Error('This device is already registered.');
+                    throw new Error('This device is already registered for this account.');
+                }
+                if (err.name === 'NotAllowedError') {
+                    throw new Error('Registration cancelled or timed out.');
                 }
                 throw err;
             }
@@ -48,13 +51,18 @@ export function useWebAuthn() {
 
             if (!verifyRes.ok) {
                 const errorText = await verifyRes.text();
-                throw new Error(`Verification error: ${verifyRes.status} - ${errorText || 'Unknown error'}`);
+                try {
+                    const errorJson = JSON.parse(errorText);
+                    throw new Error(errorJson.error || 'Verification failed');
+                } catch {
+                    throw new Error(`Verification error: ${verifyRes.status}`);
+                }
             }
 
             const verifyJSON = await verifyRes.json();
 
             if (verifyJSON.verified) {
-                setSuccess('Registration successful!');
+                setSuccess('Registration successful! You can now log in.');
             } else {
                 throw new Error('Verification failed');
             }
@@ -80,7 +88,7 @@ export function useWebAuthn() {
 
             if (!optionsRes.ok) {
                 const errorText = await optionsRes.text();
-                throw new Error(`Server error: ${optionsRes.status} - ${errorText || 'Unknown error'}`);
+                throw new Error(errorText || 'Failed to get login options');
             }
 
             const options = await optionsRes.json();
@@ -88,7 +96,15 @@ export function useWebAuthn() {
             if (options.error) throw new Error(options.error);
 
             // 2. Start authentication
-            const asseResp = await startAuthentication(options);
+            let asseResp;
+            try {
+                asseResp = await startAuthentication(options);
+            } catch (err: any) {
+                if (err.name === 'NotAllowedError') {
+                    throw new Error('Login cancelled or timed out.');
+                }
+                throw err;
+            }
 
             // 3. Verify authentication
             const verifyRes = await fetch('/api/auth/login/verify', {
@@ -99,7 +115,12 @@ export function useWebAuthn() {
 
             if (!verifyRes.ok) {
                 const errorText = await verifyRes.text();
-                throw new Error(`Verification error: ${verifyRes.status} - ${errorText || 'Unknown error'}`);
+                try {
+                    const errorJson = JSON.parse(errorText);
+                    throw new Error(errorJson.error || 'Verification failed');
+                } catch {
+                    throw new Error(`Verification error: ${verifyRes.status}`);
+                }
             }
 
             const verifyJSON = await verifyRes.json();
