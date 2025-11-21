@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     // 2. Generate registration options
     const options = await generateRegistrationOptions({
         rpName: 'Next.js WebAuthn',
-        rpID: process.env.NEXT_PUBLIC_RP_ID || 'localhost',
+        rpID: 'login-one-gilt.vercel.app',
         userID: user.id,
         userName: user.email,
         // Don't prompt users for additional information about the authenticator

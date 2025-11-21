@@ -35,8 +35,8 @@ export async function POST(request: Request) {
         verification = await verifyAuthenticationResponse({
             response,
             expectedChallenge: challenge,
-            expectedOrigin: process.env.NEXT_PUBLIC_ORIGIN || 'http://localhost:3000',
-            expectedRPID: process.env.NEXT_PUBLIC_RP_ID || 'localhost',
+            expectedOrigin: 'https://login-one-gilt.vercel.app',
+            expectedRPID: 'login-one-gilt.vercel.app',
             authenticator: {
                 credentialID: authenticator.credentialID,
                 credentialPublicKey: new Uint8Array(authenticator.credentialPublicKey),
