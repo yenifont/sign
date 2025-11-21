@@ -38,9 +38,7 @@ export async function POST(request: Request) {
         let verification;
         try {
             // Convert credentialPublicKey from Buffer to Uint8Array
-            const publicKey = authenticator.credentialPublicKey instanceof Buffer
-                ? new Uint8Array(authenticator.credentialPublicKey)
-                : new Uint8Array(Buffer.from(authenticator.credentialPublicKey));
+            const publicKey = new Uint8Array(authenticator.credentialPublicKey);
 
             // Ensure counter is a valid number
             const counterValue = authenticator.counter
@@ -58,6 +56,12 @@ export async function POST(request: Request) {
                     : undefined,
             };
 
+            console.log('Debug: Authenticator Object:', {
+                hasPublicKey: !!authenticatorObj.credentialPublicKey,
+                publicKeyType: authenticatorObj.credentialPublicKey?.constructor?.name,
+                publicKeyLength: authenticatorObj.credentialPublicKey?.length,
+            });
+
             const origin = request.headers.get('origin') || 'https://login-one-gilt.vercel.app';
 
             verification = await verifyAuthenticationResponse({
@@ -66,7 +70,6 @@ export async function POST(request: Request) {
                 expectedOrigin: origin,
                 expectedRPID: 'login-one-gilt.vercel.app',
                 authenticator: authenticatorObj,
-                credential: authenticatorObj,
             } as any);
         } catch (error: any) {
             console.error('Verification error details:', error);
