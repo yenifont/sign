@@ -69,19 +69,33 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Authentication verification failed' }, { status: 400 });
         }
 
-        if (!authenticationInfo) {
-            return NextResponse.json({ error: 'Invalid authentication response' }, { status: 400 });
-        }
+        // Log authenticationInfo structure for debugging
+        console.log('AuthenticationInfo received:', {
+            hasAuthenticationInfo: !!authenticationInfo,
+            authenticationInfoKeys: authenticationInfo ? Object.keys(authenticationInfo) : [],
+            authenticationInfo: authenticationInfo,
+        });
 
-        // Update counter
-        try {
-            await prisma.authenticator.update({
-                where: { credentialID: authenticator.credentialID },
-                data: { counter: BigInt(authenticationInfo.newCounter) },
-            });
-        } catch (dbError: any) {
-            console.error('Database update error:', dbError);
-            // Continue even if counter update fails
+        // Update counter if authenticationInfo exists and has newCounter
+        if (authenticationInfo) {
+            try {
+                // SimpleWebAuthn v13+ uses authenticationInfo.newCounter
+                const newCounter = (authenticationInfo as any).newCounter ?? (authenticationInfo as any).counter;
+                
+                if (newCounter !== undefined) {
+                    await prisma.authenticator.update({
+                        where: { credentialID: authenticator.credentialID },
+                        data: { counter: BigInt(newCounter) },
+                    });
+                } else {
+                    console.warn('No counter found in authenticationInfo, skipping counter update');
+                }
+            } catch (dbError: any) {
+                console.error('Database update error:', dbError);
+                // Continue even if counter update fails
+            }
+        } else {
+            console.warn('No authenticationInfo returned, skipping counter update');
         }
 
         // Clear challenge
