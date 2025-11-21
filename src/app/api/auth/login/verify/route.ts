@@ -42,6 +42,13 @@ export async function POST(request: Request) {
                 ? new Uint8Array(authenticator.credentialPublicKey)
                 : new Uint8Array(Buffer.from(authenticator.credentialPublicKey));
 
+            // Ensure counter is a valid number
+            const counterValue = authenticator.counter 
+                ? (typeof authenticator.counter === 'bigint' 
+                    ? Number(authenticator.counter) 
+                    : Number(authenticator.counter))
+                : 0;
+
             verification = await verifyAuthenticationResponse({
                 response,
                 expectedChallenge: challenge,
@@ -50,7 +57,7 @@ export async function POST(request: Request) {
                 authenticator: {
                     credentialID: authenticator.credentialID,
                     credentialPublicKey: publicKey,
-                    counter: Number(authenticator.counter),
+                    counter: counterValue,
                     transports: authenticator.transports
                         ? (authenticator.transports.split(',') as AuthenticatorTransport[])
                         : undefined,
