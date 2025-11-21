@@ -38,36 +38,67 @@ export async function POST(request: Request) {
             expectedOrigin: 'https://login-one-gilt.vercel.app',
             expectedRPID: 'login-one-gilt.vercel.app',
         });
-    } catch (error) {
-        console.error(error);
-        return NextResponse.json({ error: 'Verification failed' }, { status: 400 });
+    } catch (error: any) {
+        console.error('Verification error details:', error);
+        return NextResponse.json({ 
+            error: 'Verification failed: ' + (error.message || 'Unknown error') 
+        }, { status: 400 });
     }
 
     const { verified, registrationInfo } = verification;
 
-    if (verified && registrationInfo) {
-        const { credentialPublicKey, credentialID, counter, credentialDeviceType, credentialBackedUp } = registrationInfo as any;
+    if (!verified) {
+        return NextResponse.json({ error: 'Registration verification failed' }, { status: 400 });
+    }
+
+    if (!registrationInfo) {
+        console.error('Verification succeeded but no registrationInfo returned');
+        return NextResponse.json({ error: 'Invalid registration response' }, { status: 400 });
+    }
+
+    const { credentialPublicKey, credentialID, counter, credentialDeviceType, credentialBackedUp } = registrationInfo as any;
+
+        // Validate required fields
+        if (!credentialPublicKey || !credentialID || counter === undefined) {
+            console.error('Missing required registration info:', { credentialPublicKey: !!credentialPublicKey, credentialID: !!credentialID, counter });
+            return NextResponse.json({ error: 'Invalid registration data' }, { status: 400 });
+        }
 
         // 4. Save authenticator to DB
-        await prisma.authenticator.create({
-            data: {
-                credentialID,
-                credentialPublicKey: Buffer.from(credentialPublicKey),
-                counter: BigInt(counter),
-                credentialDeviceType,
-                credentialBackedUp,
-                transports: response.response.transports?.join(',') || null,
-                userId: user.id,
-            },
-        });
+        try {
+            // Convert credentialPublicKey to Buffer if it's not already
+            let publicKeyBuffer: Buffer;
+            if (Buffer.isBuffer(credentialPublicKey)) {
+                publicKeyBuffer = credentialPublicKey;
+            } else if (credentialPublicKey instanceof Uint8Array) {
+                publicKeyBuffer = Buffer.from(credentialPublicKey);
+            } else if (Array.isArray(credentialPublicKey)) {
+                publicKeyBuffer = Buffer.from(credentialPublicKey);
+            } else {
+                console.error('Invalid credentialPublicKey type:', typeof credentialPublicKey);
+                return NextResponse.json({ error: 'Invalid credential public key format' }, { status: 400 });
+            }
+
+            await prisma.authenticator.create({
+                data: {
+                    credentialID,
+                    credentialPublicKey: publicKeyBuffer,
+                    counter: BigInt(counter || 0),
+                    credentialDeviceType: credentialDeviceType || 'unknown',
+                    credentialBackedUp: credentialBackedUp ?? false,
+                    transports: response.response?.transports?.join(',') || null,
+                    userId: user.id,
+                },
+            });
+        } catch (dbError: any) {
+            console.error('Database error:', dbError);
+            return NextResponse.json({ error: 'Failed to save authenticator: ' + (dbError.message || 'Unknown error') }, { status: 500 });
+        }
 
         // 5. Clear challenge
         cookieStore.delete('reg-challenge');
 
         return NextResponse.json({ verified: true });
-    }
-
-        return NextResponse.json({ verified: false }, { status: 400 });
     } catch (error: any) {
         console.error('Registration verify error:', error);
         return NextResponse.json(
