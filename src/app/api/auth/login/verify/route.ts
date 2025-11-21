@@ -38,35 +38,40 @@ export async function POST(request: Request) {
         let verification;
         try {
             // Convert credentialPublicKey from Buffer to Uint8Array
-            const publicKey = authenticator.credentialPublicKey instanceof Buffer 
+            const publicKey = authenticator.credentialPublicKey instanceof Buffer
                 ? new Uint8Array(authenticator.credentialPublicKey)
                 : new Uint8Array(Buffer.from(authenticator.credentialPublicKey));
 
             // Ensure counter is a valid number
-            const counterValue = authenticator.counter 
-                ? (typeof authenticator.counter === 'bigint' 
-                    ? Number(authenticator.counter) 
+            const counterValue = authenticator.counter
+                ? (typeof authenticator.counter === 'bigint'
+                    ? Number(authenticator.counter)
                     : Number(authenticator.counter))
                 : 0;
+
+            const authenticatorObj = {
+                credentialID: authenticator.credentialID,
+                credentialPublicKey: publicKey,
+                counter: counterValue,
+                transports: authenticator.transports
+                    ? (authenticator.transports.split(',') as AuthenticatorTransport[])
+                    : undefined,
+            };
+
+            const origin = request.headers.get('origin') || 'https://login-one-gilt.vercel.app';
 
             verification = await verifyAuthenticationResponse({
                 response,
                 expectedChallenge: challenge,
-                expectedOrigin: 'https://login-one-gilt.vercel.app',
+                expectedOrigin: origin,
                 expectedRPID: 'login-one-gilt.vercel.app',
-                authenticator: {
-                    credentialID: authenticator.credentialID,
-                    credentialPublicKey: publicKey,
-                    counter: counterValue,
-                    transports: authenticator.transports
-                        ? (authenticator.transports.split(',') as AuthenticatorTransport[])
-                        : undefined,
-                },
+                authenticator: authenticatorObj,
+                credential: authenticatorObj,
             } as any);
         } catch (error: any) {
             console.error('Verification error details:', error);
-            return NextResponse.json({ 
-                error: 'Verification failed: ' + (error.message || 'Unknown error') 
+            return NextResponse.json({
+                error: 'Verification failed: ' + (error.message || 'Unknown error')
             }, { status: 400 });
         }
 
@@ -88,7 +93,7 @@ export async function POST(request: Request) {
             try {
                 // SimpleWebAuthn v13+ uses authenticationInfo.newCounter
                 const newCounter = (authenticationInfo as any).newCounter ?? (authenticationInfo as any).counter;
-                
+
                 if (newCounter !== undefined) {
                     await prisma.authenticator.update({
                         where: { credentialID: authenticator.credentialID },
@@ -116,8 +121,8 @@ export async function POST(request: Request) {
             maxAge: 60 * 60 * 24, // 1 day
         });
 
-        return NextResponse.json({ 
-            verified: true, 
+        return NextResponse.json({
+            verified: true,
             user: {
                 id: authenticator.user.id,
                 email: authenticator.user.email,
