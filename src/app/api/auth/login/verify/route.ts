@@ -56,12 +56,6 @@ export async function POST(request: Request) {
                     : undefined,
             };
 
-            console.log('Debug: Authenticator Object:', {
-                hasPublicKey: !!authenticatorObj.credentialPublicKey,
-                publicKeyType: authenticatorObj.credentialPublicKey?.constructor?.name,
-                publicKeyLength: authenticatorObj.credentialPublicKey?.length,
-            });
-
             const origin = request.headers.get('origin') || 'https://login-one-gilt.vercel.app';
 
             verification = await verifyAuthenticationResponse({
