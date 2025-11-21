@@ -198,7 +198,7 @@ export default function Home() {
 
                             <button
                                 onClick={handlePasskeyLogin}
-                                disabled={loading || !email}
+                                disabled={loading}
                                 className="w-full group relative px-6 py-3.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-semibold rounded-xl border-2 border-gray-300 dark:border-gray-600 shadow-md hover:shadow-lg hover:border-indigo-400 dark:hover:border-indigo-500 transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                             >
                                 <span className="relative z-10 flex items-center justify-center gap-2">
