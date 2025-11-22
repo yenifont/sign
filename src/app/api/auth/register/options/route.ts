@@ -4,6 +4,8 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { AuthenticatorTransport } from '@simplewebauthn/server';
 
+import { getRPID } from '@/lib/auth';
+
 export async function POST(request: Request) {
     try {
         const body = await request.json();
@@ -29,39 +31,40 @@ export async function POST(request: Request) {
         // 2. Generate registration options
         // Convert user.id (string) to Buffer for userID (required by SimpleWebAuthn v13+)
         const userIDBuffer = Buffer.from(user.id, 'utf-8');
-        
-        const options = await generateRegistrationOptions({
-        rpName: 'Next.js WebAuthn',
-        rpID: 'login-one-gilt.vercel.app',
-        userID: userIDBuffer,
-        userName: user.email,
-        // Don't prompt users for additional information about the authenticator
-        // (Recommended for smoother UX)
-        attestationType: 'none',
-        // Prevent users from re-registering existing authenticators
-        excludeCredentials: user.authenticators.map((authenticator) => ({
-            id: authenticator.credentialID,
-            type: 'public-key',
-            transports: authenticator.transports
-                ? (authenticator.transports.split(',') as AuthenticatorTransport[])
-                : undefined,
-        })),
-        authenticatorSelection: {
-            residentKey: 'preferred',
-            userVerification: 'preferred',
-            authenticatorAttachment: 'platform', // Optional: Force platform authenticator (TouchID/FaceID)
-        },
-    } as any);
 
-    // 3. Save challenge to cookie (or DB/Redis)
-    // In a real app, use a secure session. Here we use a simple cookie.
-    const cookieStore = await cookies();
-    cookieStore.set('reg-challenge', options.challenge, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 60 * 5, // 5 minutes
-    });
+        const rpID = getRPID(request);
+        const options = await generateRegistrationOptions({
+            rpName: 'Next.js WebAuthn',
+            rpID,
+            userID: userIDBuffer,
+            userName: user.email,
+            // Don't prompt users for additional information about the authenticator
+            // (Recommended for smoother UX)
+            attestationType: 'none',
+            // Prevent users from re-registering existing authenticators
+            excludeCredentials: user.authenticators.map((authenticator) => ({
+                id: authenticator.credentialID,
+                type: 'public-key',
+                transports: authenticator.transports
+                    ? (authenticator.transports.split(',') as AuthenticatorTransport[])
+                    : undefined,
+            })),
+            authenticatorSelection: {
+                residentKey: 'preferred',
+                userVerification: 'preferred',
+                authenticatorAttachment: 'platform', // Optional: Force platform authenticator (TouchID/FaceID)
+            },
+        } as any);
+
+        // 3. Save challenge to cookie (or DB/Redis)
+        // In a real app, use a secure session. Here we use a simple cookie.
+        const cookieStore = await cookies();
+        cookieStore.set('reg-challenge', options.challenge, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 60 * 5, // 5 minutes
+        });
 
         return NextResponse.json(options);
     } catch (error: any) {

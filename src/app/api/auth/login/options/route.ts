@@ -4,6 +4,8 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { AuthenticatorTransport } from '@simplewebauthn/server';
 
+import { getRPID } from '@/lib/auth';
+
 export async function POST(request: Request) {
     const body = await request.json();
     const { email } = body;
@@ -16,8 +18,9 @@ export async function POST(request: Request) {
         });
     }
 
+    const rpID = getRPID(request);
     const options = await generateAuthenticationOptions({
-        rpID: 'login-one-gilt.vercel.app',
+        rpID,
         allowCredentials: user?.authenticators.map((authenticator) => ({
             id: authenticator.credentialID,
             type: 'public-key',

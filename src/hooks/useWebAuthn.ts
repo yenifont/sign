@@ -54,7 +54,8 @@ export function useWebAuthn() {
                 try {
                     const errorJson = JSON.parse(errorText);
                     throw new Error(errorJson.error || 'Verification failed');
-                } catch {
+                } catch (e) {
+                    console.error('Failed to parse error response:', errorText);
                     throw new Error(`Verification error: ${verifyRes.status}`);
                 }
             }
@@ -118,7 +119,8 @@ export function useWebAuthn() {
                 try {
                     const errorJson = JSON.parse(errorText);
                     throw new Error(errorJson.error || 'Verification failed');
-                } catch {
+                } catch (e) {
+                    console.error('Failed to parse error response:', errorText);
                     throw new Error(`Verification error: ${verifyRes.status}`);
                 }
             }

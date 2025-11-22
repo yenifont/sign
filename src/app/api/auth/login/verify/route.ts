@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { AuthenticatorTransport } from '@simplewebauthn/server';
+import { getRPID, getOrigin } from '@/lib/auth';
 
 export async function POST(request: Request) {
     try {
@@ -56,13 +57,16 @@ export async function POST(request: Request) {
                     : undefined,
             };
 
-            const origin = request.headers.get('origin') || 'https://login-one-gilt.vercel.app';
+
+
+            const expectedOrigin = getOrigin(request);
+            const expectedRPID = getRPID(request);
 
             verification = await verifyAuthenticationResponse({
                 response,
                 expectedChallenge: challenge,
-                expectedOrigin: origin,
-                expectedRPID: 'login-one-gilt.vercel.app',
+                expectedOrigin,
+                expectedRPID,
                 authenticator: authenticatorObj,
             } as any);
         } catch (error: any) {
